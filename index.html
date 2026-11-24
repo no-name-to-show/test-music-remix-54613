@@ -1,0 +1,2077 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mix Maker — crea mixes en tu navegador</title>
+    <meta name="description"
+        content="Crea mixes de canciones directamente en el navegador. Todo se procesa en tu dispositivo.">
+    <style>
+        :root {
+            --bg: #0a0c13;
+            --panel: #131723;
+            --panel2: #1a2031;
+            --line: #262e45;
+            --text: #e9ecf6;
+            --muted: #8d96b3;
+            --accent: #8b5cf6;
+            --accent2: #22d3ee;
+            --danger: #fb7185;
+            --ok: #34d399;
+            --warn: #fbbf24;
+            --radius: 14px;
+            color-scheme: dark;
+        }
+
+        * {
+            box-sizing: border-box
+        }
+
+        html {
+            -webkit-text-size-adjust: 100%
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            color: var(--text);
+            font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+            background:
+                radial-gradient(1100px 560px at 8% -10%, #1b1440 0, transparent 60%),
+                radial-gradient(900px 500px at 100% 0, #06303a 0, transparent 55%),
+                var(--bg);
+        }
+
+        h1,
+        h2 {
+            margin: 0
+        }
+
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            margin: -1px;
+            padding: 0;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0
+        }
+
+        .skip {
+            position: absolute;
+            left: 8px;
+            top: -60px;
+            background: var(--accent);
+            color: #fff;
+            padding: 8px 12px;
+            border-radius: 8px;
+            z-index: 100
+        }
+
+        .skip:focus {
+            top: 8px
+        }
+
+        button {
+            font: inherit;
+            color: inherit;
+            background: var(--panel2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 12px;
+            cursor: pointer;
+            transition: background .15s, border-color .15s, transform .05s
+        }
+
+        button:hover:not(:disabled) {
+            background: #222a41;
+            border-color: #37425f
+        }
+
+        button:active:not(:disabled) {
+            transform: translateY(1px)
+        }
+
+        button:disabled {
+            opacity: .45;
+            cursor: not-allowed
+        }
+
+        :focus-visible {
+            outline: 2px solid var(--accent2);
+            outline-offset: 2px
+        }
+
+        button.primary {
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            border: 0;
+            font-weight: 600;
+            color: #fff
+        }
+
+        button.primary:hover:not(:disabled) {
+            filter: brightness(1.1);
+            background: linear-gradient(135deg, var(--accent), #6366f1)
+        }
+
+        button.danger:hover:not(:disabled) {
+            border-color: var(--danger);
+            color: var(--danger)
+        }
+
+        button.icon {
+            width: 34px;
+            height: 34px;
+            padding: 0;
+            display: inline-grid;
+            place-items: center
+        }
+
+        button.icon.big {
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            border: 0;
+            color: #fff
+        }
+
+        button.icon.big svg {
+            width: 24px;
+            height: 24px
+        }
+
+        svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            display: block
+        }
+
+        input[type=text],
+        input[type=number] {
+            font: inherit;
+            color: inherit;
+            background: #0e1220;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 8px 10px;
+            width: 100%
+        }
+
+        input[type=range] {
+            width: 100%;
+            accent-color: var(--accent)
+        }
+
+        .app {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 16px 16px 230px
+        }
+
+        .top {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 16px
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            gap: 12px
+        }
+
+        .brand h1 {
+            font-size: 26px;
+            letter-spacing: -.5px
+        }
+
+        .brand h1 span {
+            background: linear-gradient(135deg, var(--accent), var(--accent2));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent
+        }
+
+        .chip {
+            font-size: 12px;
+            padding: 3px 9px;
+            border-radius: 999px;
+            background: #10281f;
+            color: var(--ok);
+            border: 1px solid #1d4a38
+        }
+
+        .top-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center
+        }
+
+        .name-input {
+            width: 180px !important
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+            gap: 16px;
+            align-items: start
+        }
+
+        @media (max-width:900px) {
+            .grid {
+                grid-template-columns: minmax(0, 1fr)
+            }
+        }
+
+        .card {
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 16px
+        }
+
+        .card h2 {
+            font-size: 16px;
+            margin-bottom: 12px
+        }
+
+        .hint {
+            color: var(--muted);
+            font-size: 13px;
+            margin: 8px 0 0
+        }
+
+        .empty {
+            color: var(--muted);
+            margin: 0
+        }
+
+        .drop {
+            border: 2px dashed #34406a;
+            border-radius: var(--radius);
+            padding: 26px 16px;
+            text-align: center;
+            cursor: pointer;
+            background: rgba(139, 92, 246, .05);
+            transition: border-color .15s, background .15s;
+            display: grid;
+            gap: 4px;
+            margin-bottom: 16px
+        }
+
+        .drop:hover,
+        .drop.over {
+            border-color: var(--accent);
+            background: rgba(139, 92, 246, .12)
+        }
+
+        .drop strong {
+            font-size: 17px
+        }
+
+        .drop span {
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        .drop-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 90;
+            display: none;
+            place-items: center;
+            background: rgba(10, 12, 19, .85);
+            backdrop-filter: blur(4px);
+            font-size: 24px;
+            font-weight: 600;
+            border: 4px dashed var(--accent);
+            margin: 10px;
+            border-radius: 20px
+        }
+
+        .drop-overlay.on {
+            display: grid
+        }
+
+        .notice {
+            background: #2a2110;
+            border: 1px solid #5b4514;
+            color: #fde8a8;
+            border-radius: 12px;
+            padding: 10px 12px;
+            margin-bottom: 12px;
+            font-size: 14px
+        }
+
+        .list-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px
+        }
+
+        .list-head h2 {
+            margin: 0
+        }
+
+        #summary {
+            color: var(--muted);
+            font-size: 13px
+        }
+
+        .tracks {
+            list-style: none;
+            margin: 0;
+            padding: 0
+        }
+
+        .track {
+            display: grid;
+            grid-template-columns: auto minmax(0, 1fr) 140px auto;
+            gap: 10px;
+            align-items: center;
+            padding: 8px 10px;
+            background: var(--panel);
+            border: 1px solid var(--line);
+            border-radius: 12px;
+            position: relative;
+        }
+
+        .track.selected {
+            background: var(--panel2);
+            border-color: #3d4a73
+        }
+
+        .track.playing {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 1px var(--accent) inset
+        }
+
+        .track.dragging {
+            opacity: .55
+        }
+
+        .track.drop-before::before,
+        .track.drop-after::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 3px;
+            border-radius: 2px;
+            background: var(--accent2)
+        }
+
+        .track.drop-before::before {
+            top: -6px
+        }
+
+        .track.drop-after::after {
+            bottom: -6px
+        }
+
+        .grip {
+            touch-action: none;
+            cursor: grab;
+            color: var(--muted)
+        }
+
+        .main {
+            background: none;
+            border: 0;
+            text-align: left;
+            padding: 4px;
+            min-width: 0;
+            display: grid;
+            gap: 2px
+        }
+
+        .main:hover:not(:disabled) {
+            background: none
+        }
+
+        .tname {
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .tmeta {
+            font-size: 12px;
+            color: var(--muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis
+        }
+
+        .track.missing .tmeta {
+            color: var(--warn)
+        }
+
+        .thumb {
+            width: 140px;
+            height: 40px;
+            display: block;
+            border-radius: 6px;
+            background: #0e1220
+        }
+
+        .acts {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            justify-content: flex-end
+        }
+
+        .gap {
+            display: flex;
+            justify-content: center;
+            padding: 3px 0
+        }
+
+        .gapbtn {
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 999px;
+            color: var(--muted);
+            background: transparent;
+            border-style: dashed;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px
+        }
+
+        .gapbtn svg {
+            width: 12px;
+            height: 12px
+        }
+
+        .track.loading .tname::after {
+            content: "";
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            margin-left: 8px;
+            border: 2px solid var(--muted);
+            border-top-color: var(--accent2);
+            border-radius: 50%;
+            animation: spin .8s linear infinite;
+            vertical-align: -2px
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg)
+            }
+        }
+
+        .empty-li {
+            color: var(--muted);
+            text-align: center;
+            padding: 26px 10px;
+            border: 1px dashed var(--line);
+            border-radius: 12px
+        }
+
+        @media (max-width:640px) {
+            .track {
+                grid-template-columns: auto minmax(0, 1fr);
+            }
+
+            .thumb {
+                grid-column: 1/-1;
+                width: 100%
+            }
+
+            .acts {
+                grid-column: 1/-1;
+                justify-content: flex-start
+            }
+        }
+
+        .trim {
+            position: relative;
+            height: 96px;
+            border-radius: 10px;
+            background: #0e1220;
+            margin: 12px 0 4px;
+            user-select: none;
+            touch-action: none
+        }
+
+        .trim canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+            border-radius: 10px
+        }
+
+        .trim .shade {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            background: rgba(5, 7, 12, .6);
+            pointer-events: none
+        }
+
+        .hnd {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 18px;
+            margin-left: -9px;
+            cursor: ew-resize;
+            touch-action: none;
+            display: grid;
+            place-items: center
+        }
+
+        .hnd::before {
+            content: "";
+            width: 4px;
+            height: 100%;
+            background: var(--accent2);
+            border-radius: 2px
+        }
+
+        .hnd::after {
+            content: "";
+            position: absolute;
+            width: 12px;
+            height: 26px;
+            border-radius: 6px;
+            background: var(--accent2)
+        }
+
+        .row2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px
+        }
+
+        label.f {
+            display: grid;
+            gap: 4px;
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        .ctl {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 2px 8px;
+            margin-top: 12px;
+            font-size: 13px
+        }
+
+        .ctl label {
+            color: var(--muted)
+        }
+
+        .ctl output {
+            font-variant-numeric: tabular-nums
+        }
+
+        .ctl input {
+            grid-column: 1/-1
+        }
+
+        .btn-row {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 14px
+        }
+
+        .seg-ctl {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px
+        }
+
+        .seg-ctl label {
+            position: relative;
+            display: block
+        }
+
+        .seg-ctl input {
+            position: absolute;
+            inset: 0;
+            opacity: 0;
+            cursor: pointer;
+            margin: 0
+        }
+
+        .seg-ctl span {
+            display: block;
+            text-align: center;
+            padding: 9px 6px;
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            background: var(--panel2);
+            font-size: 13px
+        }
+
+        .seg-ctl input:checked+span {
+            background: linear-gradient(135deg, var(--accent), #6366f1);
+            border-color: transparent;
+            font-weight: 600
+        }
+
+        .seg-ctl input:focus-visible+span {
+            outline: 2px solid var(--accent2);
+            outline-offset: 2px
+        }
+
+        progress {
+            width: 100%;
+            height: 12px;
+            accent-color: var(--accent2)
+        }
+
+        #expProg {
+            margin-top: 12px;
+            display: grid;
+            gap: 4px;
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        a.btn {
+            display: inline-block;
+            margin-top: 10px;
+            color: var(--accent2)
+        }
+
+        details summary {
+            cursor: pointer;
+            font-weight: 600
+        }
+
+        kbd {
+            background: #0e1220;
+            border: 1px solid var(--line);
+            border-bottom-width: 2px;
+            border-radius: 6px;
+            padding: 1px 6px;
+            font-size: 12px
+        }
+
+        .keys {
+            margin: 10px 0 0;
+            padding: 0;
+            list-style: none;
+            display: grid;
+            gap: 6px;
+            font-size: 13px;
+            color: var(--muted)
+        }
+
+        /* Reproductor */
+        .player {
+            position: fixed;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            z-index: 20;
+            background: rgba(12, 15, 24, .93);
+            backdrop-filter: blur(12px);
+            border-top: 1px solid var(--line);
+            overflow: hidden
+        }
+
+        #viz {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            opacity: .55;
+            pointer-events: none
+        }
+
+        .pl-in {
+            position: relative;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px 16px calc(12px + env(safe-area-inset-bottom));
+            display: grid;
+            gap: 8px
+        }
+
+        .tl {
+            position: relative;
+            height: 36px;
+            background: #0e1220;
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer
+        }
+
+        .seg {
+            position: absolute;
+            height: 48%;
+            border-radius: 4px;
+            background: hsl(var(--h) 65% 55% / .7);
+            min-width: 3px;
+            border: 1px solid hsl(var(--h) 70% 70% / .6)
+        }
+
+        .seg.sel {
+            background: hsl(var(--h) 75% 62% / .95)
+        }
+
+        .ph {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #fff;
+            box-shadow: 0 0 6px #fff;
+            pointer-events: none
+        }
+
+        .pl-row {
+            display: grid;
+            grid-template-columns: auto auto minmax(0, 1fr) minmax(0, 200px);
+            gap: 12px;
+            align-items: center
+        }
+
+        .tr {
+            display: flex;
+            gap: 6px;
+            align-items: center
+        }
+
+        .time {
+            font-variant-numeric: tabular-nums;
+            font-size: 13px;
+            color: var(--muted);
+            white-space: nowrap
+        }
+
+        .now {
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            text-align: right
+        }
+
+        @media (max-width:640px) {
+            .pl-row {
+                grid-template-columns: auto 1fr;
+            }
+
+            .pl-row .seekwrap {
+                grid-column: 1/-1;
+                order: 3
+            }
+
+            .now {
+                display: none
+            }
+
+            .app {
+                padding-bottom: 250px
+            }
+        }
+
+        /* Avisos */
+        .toasts {
+            position: fixed;
+            right: 12px;
+            top: 12px;
+            z-index: 200;
+            display: grid;
+            gap: 8px;
+            max-width: min(420px, calc(100vw - 24px))
+        }
+
+        .toast {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            background: #1b2236;
+            border: 1px solid var(--line);
+            border-left: 4px solid var(--accent2);
+            border-radius: 10px;
+            padding: 10px 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, .4);
+            font-size: 14px
+        }
+
+        .toast.error {
+            border-left-color: var(--danger)
+        }
+
+        .toast.ok {
+            border-left-color: var(--ok)
+        }
+
+        .toast.warn {
+            border-left-color: var(--warn)
+        }
+
+        .toast span {
+            flex: 1
+        }
+
+        .toast button {
+            padding: 4px 8px;
+            font-size: 13px
+        }
+
+        dialog {
+            background: var(--panel);
+            color: var(--text);
+            border: 1px solid var(--line);
+            border-radius: var(--radius);
+            padding: 0;
+            width: min(560px, calc(100vw - 24px))
+        }
+
+        dialog::backdrop {
+            background: rgba(0, 0, 0, .65)
+        }
+
+        .dlg {
+            padding: 18px;
+            display: grid;
+            gap: 12px
+        }
+
+        .proj-list {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: grid;
+            gap: 8px;
+            max-height: 50vh;
+            overflow: auto
+        }
+
+        .proj {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 8px;
+            align-items: center;
+            background: var(--panel2);
+            border: 1px solid var(--line);
+            border-radius: 10px;
+            padding: 10px
+        }
+
+        .proj b {
+            display: block
+        }
+
+        .proj small {
+            color: var(--muted)
+        }
+
+        .dlg-actions {
+            display: flex;
+            justify-content: space-between;
+            gap: 8px
+        }
+
+        @media (prefers-reduced-motion:reduce) {
+            * {
+                animation-duration: .01ms !important;
+                transition-duration: .01ms !important
+            }
+
+            #viz {
+                display: none
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <a class="skip" href="#lista">Saltar a la lista de canciones</a>
+    <div class="drop-overlay" id="dropOverlay" aria-hidden="true">Suelta los audios para añadirlos al mix</div>
+
+    <div class="app">
+        <header class="top">
+            <div class="brand">
+                <h1>Mix<span>Maker</span></h1>
+                <span class="chip" title="Ningún archivo sale de tu dispositivo">🔒 100 % local</span>
+            </div>
+            <div class="top-actions">
+                <label class="sr-only" for="projName">Nombre del mix</label>
+                <input type="text" id="projName" class="name-input" value="Mi mix" maxlength="60"
+                    placeholder="Nombre del mix">
+                <button type="button" id="btnSave">Guardar</button>
+                <button type="button" id="btnProjects">Proyectos</button>
+                <button type="button" id="btnExportJson">Exportar JSON</button>
+                <button type="button" id="btnImportJson">Importar JSON</button>
+                <input type="file" id="jsonInput" accept="application/json,.json" hidden>
+            </div>
+        </header>
+
+        <div class="grid">
+            <main>
+                <div class="drop" id="drop" role="button" tabindex="0"
+                    aria-label="Añadir canciones: arrastra archivos aquí o pulsa para elegirlos">
+                    <strong>Arrastra tus canciones aquí</strong>
+                    <span>o pulsa para elegirlas · MP3, WAV, OGG, M4A · se procesan solo en tu dispositivo</span>
+                </div>
+                <input type="file" id="fileInput" accept="audio/*,.mp3,.wav,.ogg,.m4a" multiple hidden>
+
+                <div class="notice" id="missingNotice" hidden role="status"></div>
+
+                <div class="list-head">
+                    <h2 id="listTitle">Canciones del mix</h2>
+                    <span id="summary"></span>
+                </div>
+                <ol class="tracks" id="lista" aria-labelledby="listTitle"></ol>
+            </main>
+
+            <aside>
+                <section class="card" id="editor" aria-labelledby="edTitle">
+                    <h2 id="edTitle">Editar canción</h2>
+                    <p class="empty" id="edEmpty">Selecciona una canción de la lista para recortarla, ajustar el volumen
+                        o aplicar fundidos.</p>
+                    <div id="edBody" hidden>
+                        <label class="f">Título
+                            <input type="text" id="edName" maxlength="120">
+                        </label>
+                        <div class="trim" id="trimBox">
+                            <canvas id="edWave" aria-hidden="true"></canvas>
+                            <div class="shade" id="shadeL"></div>
+                            <div class="shade" id="shadeR"></div>
+                            <div class="hnd" id="hStart" role="slider" tabindex="0" aria-label="Inicio del recorte"
+                                aria-orientation="horizontal"></div>
+                            <div class="hnd" id="hEnd" role="slider" tabindex="0" aria-label="Final del recorte"
+                                aria-orientation="horizontal"></div>
+                        </div>
+                        <p class="hint" id="edLen"></p>
+                        <div class="row2">
+                            <label class="f">Inicio (segundos)<input type="number" id="edStart" min="0"
+                                    step="0.1"></label>
+                            <label class="f">Fin (segundos)<input type="number" id="edEnd" min="0" step="0.1"></label>
+                        </div>
+                        <div class="ctl"><label for="edVol">Volumen</label><output id="edVolOut" for="edVol"></output>
+                            <input type="range" id="edVol" min="0" max="200" step="1">
+                        </div>
+                        <div class="ctl"><label for="edFi">Fade in</label><output id="edFiOut" for="edFi"></output>
+                            <input type="range" id="edFi" min="0" max="15" step="0.1">
+                        </div>
+                        <div class="ctl"><label for="edFo">Fade out</label><output id="edFoOut" for="edFo"></output>
+                            <input type="range" id="edFo" min="0" max="15" step="0.1">
+                        </div>
+                        <div class="btn-row">
+                            <button type="button" id="edPlay">▶ Escuchar desde aquí</button>
+                            <button type="button" id="edReset">Restablecer</button>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="card" aria-labelledby="trTitle">
+                    <h2 id="trTitle">Transiciones</h2>
+                    <div class="seg-ctl" role="radiogroup" aria-label="Tipo de transición entre canciones">
+                        <label><input type="radio" name="trans" value="cut"><span>Corte directo</span></label>
+                        <label><input type="radio" name="trans" value="crossfade" checked><span>Crossfade</span></label>
+                        <label><input type="radio" name="trans" value="silence"><span>Silencio</span></label>
+                    </div>
+                    <div class="ctl"><label for="transSec">Duración</label><output id="transOut"
+                            for="transSec"></output>
+                        <input type="range" id="transSec" min="1" max="12" step="0.5" value="4">
+                    </div>
+                    <p class="hint" id="transHint"></p>
+                </section>
+
+                <section class="card" aria-labelledby="exTitle">
+                    <h2 id="exTitle">Exportar</h2>
+                    <p class="hint" style="margin-top:0">Se une todo el mix en un único archivo <b>WAV</b> (16 bits,
+                        estéreo). Tamaño aproximado: <span id="expSize">—</span>.</p>
+                    <div class="btn-row">
+                        <button type="button" class="primary" id="btnExport">Exportar mix (WAV)</button>
+                        <button type="button" id="btnCancel" hidden>Cancelar</button>
+                    </div>
+                    <div id="expProg" hidden>
+                        <progress id="prog" max="100" value="0" aria-label="Progreso de la exportación"></progress>
+                        <span id="progTxt" role="status"></span>
+                    </div>
+                    <a id="dl" class="btn" hidden>Descargar de nuevo</a>
+                </section>
+
+                <details class="card">
+                    <summary>Atajos de teclado</summary>
+                    <ul class="keys">
+                        <li><kbd>Espacio</kbd> reproducir / pausa</li>
+                        <li><kbd>←</kbd> <kbd>→</kbd> retroceder / avanzar 5 s (con <kbd>Mayús</kbd>, 15 s)</li>
+                        <li><kbd>N</kbd> / <kbd>P</kbd> canción siguiente / anterior</li>
+                        <li>En la lista: <kbd>↑</kbd> <kbd>↓</kbd> moverse, <kbd>Alt</kbd>+<kbd>↑</kbd>/<kbd>↓</kbd>
+                            reordenar, <kbd>Supr</kbd> eliminar</li>
+                        <li>En los tiradores de recorte: <kbd>←</kbd> <kbd>→</kbd> ajustan 0,1 s (con <kbd>Mayús</kbd>,
+                            1 s)</li>
+                    </ul>
+                </details>
+            </aside>
+        </div>
+    </div>
+
+    <footer class="player" aria-label="Reproductor del mix">
+        <canvas id="viz" aria-hidden="true"></canvas>
+        <div class="pl-in">
+            <div class="tl" id="tl" aria-hidden="true" title="Línea de tiempo del mix: pulsa para saltar"></div>
+            <div class="pl-row">
+                <div class="tr">
+                    <button type="button" class="icon" id="bPrev" aria-label="Canción anterior"></button>
+                    <button type="button" class="icon big" id="bPlay" aria-label="Reproducir"></button>
+                    <button type="button" class="icon" id="bNext" aria-label="Canción siguiente"></button>
+                </div>
+                <span class="time" id="tTime">0:00 / 0:00</span>
+                <div class="seekwrap"><input type="range" id="seek" min="0" max="0" step="0.05" value="0"
+                        aria-label="Posición en el mix"></div>
+                <span class="now" id="nowName" aria-live="off"></span>
+            </div>
+        </div>
+    </footer>
+
+    <div class="toasts" id="toasts" aria-label="Notificaciones"></div>
+    <div class="sr-only" id="live" aria-live="polite"></div>
+
+    <dialog id="dlgProjects" aria-labelledby="dlgTitle">
+        <div class="dlg">
+            <h2 id="dlgTitle">Proyectos guardados en este navegador</h2>
+            <ul class="proj-list" id="projList"></ul>
+            <div class="dlg-actions">
+                <button type="button" id="btnNew">Nuevo proyecto</button>
+                <button type="button" id="btnCloseDlg">Cerrar</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        'use strict';
+        /* =====================================================================
+           MIX MAKER — todo el procesamiento ocurre en tu navegador.
+           Secciones:
+             1. Utilidades            5. Edición de canción
+             2. Estado y layout       6. Reproducción (Web Audio)
+             3. Carga de audio        7. Exportación (OfflineAudioContext → WAV)
+             4. Lista y línea tiempo  8. Proyectos (IndexedDB / JSON)  9. Arranque
+           ===================================================================== */
+        (() => {
+
+            /* ===================== 1. UTILIDADES ===================== */
+            const $ = (s, r = document) => r.querySelector(s);
+            const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+            const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+            const num = (v, d = 0) => (Number.isFinite(+v) ? +v : d);
+            const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
+            const tick = () => new Promise(r => setTimeout(r, 0));
+            const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+            const fmt = s => {
+                if (!Number.isFinite(s) || s < 0) s = 0;
+                const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
+                return h ? `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`
+                    : `${m}:${String(sec).padStart(2, '0')}`;
+            };
+            const fmt1 = s => `${s.toFixed(1)} s`;
+            const baseName = n => n.replace(/\.[^.]+$/, '');
+            const safeName = n => (n || 'mix').replace(/[\\/:*?"<>|]+/g, '_').trim() || 'mix';
+
+            const ICON = {
+                play: '<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
+                pause: '<svg viewBox="0 0 24 24"><path d="M6 5h4v14H6zM14 5h4v14h-4z"/></svg>',
+                prev: '<svg viewBox="0 0 24 24"><path d="M6 6h2v12H6zM9.5 12l8.5 6V6z"/></svg>',
+                next: '<svg viewBox="0 0 24 24"><path d="M16 6h2v12h-2zM6 18l8.5-6L6 6z"/></svg>',
+                up: '<svg viewBox="0 0 24 24"><path d="M12 8l6 6-1.4 1.4L12 10.8l-4.6 4.6L6 14z"/></svg>',
+                down: '<svg viewBox="0 0 24 24"><path d="M12 16l-6-6 1.4-1.4 4.6 4.6 4.6-4.6L18 10z"/></svg>',
+                copy: '<svg viewBox="0 0 24 24"><path d="M16 1H4a2 2 0 00-2 2v14h2V3h12zm3 4H8a2 2 0 00-2 2v14a2 2 0 002 2h11a2 2 0 002-2V7a2 2 0 00-2-2zm0 16H8V7h11z"/></svg>',
+                trash: '<svg viewBox="0 0 24 24"><path d="M6 19a2 2 0 002 2h8a2 2 0 002-2V7H6zM19 4h-3.5l-1-1h-5l-1 1H5v2h14z"/></svg>',
+                grip: '<svg viewBox="0 0 24 24"><path d="M9 5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm6 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM9 10.5a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm6 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3zM9 16a1.5 1.5 0 110 3 1.5 1.5 0 010-3zm6 0a1.5 1.5 0 110 3 1.5 1.5 0 010-3z"/></svg>',
+            };
+
+            function toast(msg, type = 'info', action) {
+                const el = document.createElement('div');
+                el.className = 'toast ' + type;
+                el.setAttribute('role', type === 'error' ? 'alert' : 'status');
+                const sp = document.createElement('span'); sp.textContent = msg; el.append(sp);
+                const close = () => el.remove();
+                if (action) {
+                    const b = document.createElement('button'); b.type = 'button'; b.textContent = action.label;
+                    b.addEventListener('click', () => { action.fn(); close(); }); el.append(b);
+                }
+                const x = document.createElement('button'); x.type = 'button'; x.textContent = '✕'; x.setAttribute('aria-label', 'Cerrar aviso');
+                x.addEventListener('click', close); el.append(x);
+                $('#toasts').append(el);
+                setTimeout(close, type === 'error' ? 10000 : 6000);
+            }
+            function announce(msg) { const l = $('#live'); l.textContent = ''; setTimeout(() => { l.textContent = msg; }, 30); }
+
+            function downloadBlob(blob, name) {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a'); a.href = url; a.download = name; document.body.append(a); a.click(); a.remove();
+                setTimeout(() => URL.revokeObjectURL(url), 60000);
+            }
+
+            /* ===================== 2. ESTADO Y LAYOUT ===================== */
+            const state = {
+                name: 'Mi mix',
+                projectId: null,
+                tracks: [],
+                selectedId: null,
+                trans: { type: 'crossfade', seconds: 4 },
+            };
+            let dirty = false;
+            const markDirty = () => { dirty = true; };
+
+            function newTrack(o = {}) {
+                return Object.assign({
+                    id: uid(), name: '', fileName: '', fileSize: 0, file: null, buffer: null, peaks: null,
+                    duration: 0, start: 0, end: 0, volume: 1, fadeIn: 0, fadeOut: 0, loading: false, missing: false,
+                }, o);
+            }
+            const sel = () => state.tracks.find(t => t.id === state.selectedId) || null;
+            const trackLen = t => Math.max(0.05, t.end - t.start);
+
+            /* Calcula la posición de cada canción en la línea de tiempo del mix. */
+            function getLayout() {
+                const T = state.tracks, n = T.length, len = T.map(trackLen), pos = [], over = [];
+                const D = state.trans.seconds, type = state.trans.type;
+                let p = 0;
+                for (let i = 0; i < n; i++) {
+                    pos[i] = p;
+                    if (i < n - 1) {
+                        let o = 0;
+                        if (type === 'crossfade') { o = Math.min(D, len[i] / 2, len[i + 1] / 2); p += len[i] - o; }
+                        else if (type === 'silence') p += len[i] + D;
+                        else p += len[i];
+                        over[i] = o;
+                    } else p += len[i];
+                }
+                return { n, len, pos, over, total: n ? p : 0 };
+            }
+
+            /* Curva de ganancia (volumen + fades + crossfade) para el tramo [a,b] local de una canción. */
+            const CTRL_RATE = 60; // puntos de control por segundo
+            function envCurve(i, L, a, b) {
+                const t = state.tracks[i], len = L.len[i];
+                let fi = Math.max(t.fadeIn, i > 0 ? L.over[i - 1] : 0);
+                let fo = Math.max(t.fadeOut, i < L.n - 1 ? L.over[i] : 0);
+                if (fi + fo > len) { const k = len / (fi + fo); fi *= k; fo *= k; }
+                const n = Math.max(2, Math.ceil((b - a) * CTRL_RATE) + 1), c = new Float32Array(n), v = t.volume;
+                for (let k = 0; k < n; k++) {
+                    const x = a + (b - a) * k / (n - 1);
+                    let g = 1;
+                    if (fi > 0 && x < fi) g = Math.sin(x / fi * Math.PI / 2);          // potencia constante
+                    if (fo > 0 && x > len - fo) g *= Math.cos((x - (len - fo)) / fo * Math.PI / 2);
+                    c[k] = g * v;
+                }
+                return c;
+            }
+
+            /* Programa las canciones en cualquier contexto (en vivo u offline) para el rango de mix [a,b]. */
+            function schedule(ctx, dest, a, b, t0, list, minDur = 0.002) {
+                const L = getLayout();
+                for (let i = 0; i < L.n; i++) {
+                    const tr = state.tracks[i];
+                    if (!tr.buffer) continue;
+                    const s = L.pos[i], e = s + L.len[i];
+                    const from = Math.max(a, s), to = Math.min(b, e);
+                    if (to - from < minDur) continue;
+                    const g = ctx.createGain(); g.gain.value = 0;
+                    const when = t0 + (from - a);
+                    g.gain.setValueCurveAtTime(envCurve(i, L, from - s, to - s), when, to - from);
+                    const src = ctx.createBufferSource();
+                    src.buffer = tr.buffer; src.connect(g); g.connect(dest);
+                    src.start(when, tr.start + (from - s), to - from);
+                    if (list) list.push(src);
+                }
+            }
+
+            /* ===================== 3. CARGA DE AUDIO ===================== */
+            let audioCtx = null;
+            const P = { master: null, analyser: null, sources: [], playing: false, startCtx: 0, startMix: 0, pausedAt: 0, until: null, previewFrom: 0, tok: 0 };
+
+            function getCtx() {
+                if (!audioCtx) {
+                    const C = window.AudioContext || window.webkitAudioContext;
+                    if (!C) throw new Error('Este navegador no soporta Web Audio API.');
+                    try { audioCtx = new C({ sampleRate: 44100 }); } catch { audioCtx = new C(); }
+                    P.master = audioCtx.createGain();
+                    P.analyser = audioCtx.createAnalyser();
+                    P.analyser.fftSize = 256; P.analyser.smoothingTimeConstant = 0.8;
+                    P.master.connect(P.analyser); P.analyser.connect(audioCtx.destination);
+                }
+                return audioCtx;
+            }
+
+            const OK_EXT = /\.(mp3|wav|wave|ogg|oga|opus|m4a|aac|flac|webm)$/i;
+            const isAudio = f => (f.type && f.type.startsWith('audio/')) || OK_EXT.test(f.name);
+
+            async function decodeFile(file) {
+                const ctx = getCtx();
+                const ab = await file.arrayBuffer();
+                if (!ab.byteLength) throw new Error('El archivo está vacío.');
+                return new Promise((res, rej) => {
+                    const p = ctx.decodeAudioData(ab, res, rej);
+                    if (p && p.catch) p.catch(rej);
+                });
+            }
+
+            function computePeaks(buf, bins = 600) {
+                const N = buf.length, step = N / bins, out = new Float32Array(bins);
+                let max = 0;
+                for (let c = 0; c < buf.numberOfChannels; c++) {
+                    const d = buf.getChannelData(c);
+                    for (let i = 0; i < bins; i++) {
+                        const s = Math.floor(i * step), e = Math.max(s + 1, Math.floor((i + 1) * step));
+                        const stride = Math.max(1, Math.floor((e - s) / 64));
+                        let m = 0;
+                        for (let k = s; k < e; k += stride) { const v = Math.abs(d[k]); if (v > m) m = v; }
+                        if (m > out[i]) out[i] = m;
+                    }
+                }
+                for (let i = 0; i < bins; i++) if (out[i] > max) max = out[i];
+                if (max > 0) for (let i = 0; i < bins; i++) out[i] /= max;
+                return out;
+            }
+
+            function setBuffer(t, buf, keepEdits) {
+                t.buffer = buf; t.duration = buf.duration; t.peaks = computePeaks(buf);
+                if (!keepEdits) { t.start = 0; t.end = buf.duration; }
+                else {
+                    t.start = clamp(t.start, 0, Math.max(0, buf.duration - 0.05));
+                    t.end = (t.end > t.start + 0.05) ? Math.min(t.end, buf.duration) : buf.duration;
+                }
+                t.loading = false; t.missing = false;
+            }
+
+            function describeError(file, err) {
+                const m = (err && err.message) || '';
+                if (/vac[ií]o/i.test(m)) return `«${file.name}» está vacío.`;
+                return `No se pudo leer «${file.name}»: el formato no es compatible con este navegador o el archivo está dañado.`;
+            }
+
+            async function addFiles(fileList) {
+                const files = [...fileList];
+                if (!files.length) return;
+                try { getCtx(); } catch (e) { toast(e.message, 'error'); return; }
+                const queue = [];
+                for (const f of files) {
+                    if (!isAudio(f)) { toast(`«${f.name}»: formato no admitido. Usa MP3, WAV, OGG o M4A.`, 'error'); continue; }
+                    let t = state.tracks.find(x => x.missing && !x.loading && x.fileName === f.name);
+                    if (t) { t.loading = true; t.missing = false; t.file = f; t.fileSize = f.size; }
+                    else {
+                        t = newTrack({ name: baseName(f.name), fileName: f.name, fileSize: f.size, file: f, loading: true });
+                        state.tracks.push(t);
+                    }
+                    queue.push(t);
+                }
+                if (!queue.length) return;
+                markDirty();
+                if (!state.selectedId) state.selectedId = queue[0].id;
+                renderAll();
+                const ok = await decodeQueue(queue, false);
+                if (ok) { toast(`${ok} ${ok === 1 ? 'canción añadida' : 'canciones añadidas'}.`, 'ok'); announce(`${ok} canciones añadidas`); }
+            }
+
+            /* Decodifica de una en una para no disparar el consumo de memoria. */
+            async function decodeQueue(queue, restoring) {
+                let ok = 0;
+                for (const t of queue) {
+                    if (!state.tracks.includes(t)) continue;
+                    try {
+                        const buf = await decodeFile(t.file);
+                        if (!state.tracks.includes(t)) continue;
+                        const relink = t.duration > 0 && !restoring && t.end > 0;
+                        setBuffer(t, buf, restoring || relink);
+                        ok++;
+                    } catch (err) {
+                        toast(describeError(t.file || { name: t.fileName }, err), 'error');
+                        if (t.duration > 0) { t.loading = false; t.missing = true; }   // proyecto: queda pendiente
+                        else state.tracks.splice(state.tracks.indexOf(t), 1);
+                        if (state.selectedId === t.id) state.selectedId = state.tracks[0]?.id || null;
+                    }
+                    renderAll();
+                    await tick();
+                }
+                return ok;
+            }
+
+            /* ===================== 4. LISTA Y LÍNEA DE TIEMPO ===================== */
+            const list = $('#lista');
+
+            function drawWave(cv, peaks, o = {}) {
+                const dpr = Math.min(window.devicePixelRatio || 1, 2), w = cv.clientWidth, h = cv.clientHeight;
+                if (!w || !h) return;
+                const W = Math.round(w * dpr), H = Math.round(h * dpr);
+                if (cv.width !== W || cv.height !== H) { cv.width = W; cv.height = H; }
+                const c = cv.getContext('2d');
+                c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, h);
+                const mid = h / 2;
+                if (!peaks) { c.fillStyle = '#2a3350'; c.fillRect(0, mid - 1, w, 2); return; }
+                const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, '#8b5cf6'); g.addColorStop(1, '#22d3ee');
+                const bw = 2, gap = 1, bars = Math.max(1, Math.floor(w / (bw + gap))), N = peaks.length;
+                const f0 = o.from ?? 0, f1 = o.to ?? 1;
+                for (let i = 0; i < bars; i++) {
+                    const p0 = Math.floor(i / bars * N), p1 = Math.max(p0 + 1, Math.floor((i + 1) / bars * N));
+                    let v = 0; for (let k = p0; k < p1; k++) if (peaks[k] > v) v = peaks[k];
+                    const hh = Math.max(1.5, v * (h - 4)), fr = i / bars;
+                    c.fillStyle = (fr >= f0 && fr <= f1) ? g : '#2b3350';
+                    c.fillRect(i * (bw + gap), mid - hh / 2, bw, hh);
+                }
+            }
+
+            function metaText(t) {
+                if (t.loading) return 'Cargando y decodificando…';
+                if (t.missing) return `Falta el archivo «${t.fileName}»: arrástralo aquí para recuperarlo`;
+                const len = trackLen(t);
+                let s = fmt(len);
+                if (Math.abs(len - t.duration) > 0.05) s += ` (de ${fmt(t.duration)})`;
+                s += ` · vol ${Math.round(t.volume * 100)} %`;
+                if (t.fadeIn > 0) s += ` · fade in ${fmt1(t.fadeIn)}`;
+                if (t.fadeOut > 0) s += ` · fade out ${fmt1(t.fadeOut)}`;
+                return s;
+            }
+
+            function drawThumb(li, t) {
+                const cv = $('.thumb', li);
+                drawWave(cv, t.peaks, t.duration ? { from: t.start / t.duration, to: t.end / t.duration } : {});
+            }
+
+            function buildRow(t, i) {
+                const li = document.createElement('li');
+                li.className = 'track' + (t.id === state.selectedId ? ' selected' : '') + (t.loading ? ' loading' : '') + (t.missing ? ' missing' : '');
+                li.dataset.id = t.id;
+                li.innerHTML = `
+    <button type="button" class="icon grip" aria-label="Arrastrar para reordenar">${ICON.grip}</button>
+    <button type="button" class="main" aria-pressed="${t.id === state.selectedId}"><span class="tname"></span><span class="tmeta"></span></button>
+    <canvas class="thumb" aria-hidden="true"></canvas>
+    <div class="acts">
+      <button type="button" class="icon" data-act="play" aria-label="Reproducir desde esta canción">${ICON.play}</button>
+      <button type="button" class="icon" data-act="up" aria-label="Subir">${ICON.up}</button>
+      <button type="button" class="icon" data-act="down" aria-label="Bajar">${ICON.down}</button>
+      <button type="button" class="icon" data-act="dup" aria-label="Duplicar">${ICON.copy}</button>
+      <button type="button" class="icon danger" data-act="del" aria-label="Eliminar">${ICON.trash}</button>
+    </div>`;
+                fillRowText(li, t, i);
+                return li;
+            }
+            function fillRowText(li, t, i) {
+                $('.tname', li).textContent = `${i + 1}. ${t.name || '(sin título)'}`;
+                $('.tmeta', li).textContent = metaText(t);
+                $('.grip', li).setAttribute('aria-label', `Arrastrar para reordenar «${t.name}»`);
+                $('.main', li).setAttribute('aria-label', `Seleccionar «${t.name}»`);
+                $$('[data-act]', li).forEach(b => {
+                    const base = { play: 'Reproducir desde', up: 'Subir', down: 'Bajar', dup: 'Duplicar', del: 'Eliminar' }[b.dataset.act];
+                    b.setAttribute('aria-label', `${base} «${t.name}»`);
+                    if (b.dataset.act === 'up') b.disabled = i === 0;
+                    if (b.dataset.act === 'down') b.disabled = i === state.tracks.length - 1;
+                    if (b.dataset.act === 'play') b.disabled = !t.buffer;
+                });
+            }
+            function gapLabel() {
+                const { type, seconds } = state.trans;
+                return type === 'cut' ? 'Corte directo' : type === 'crossfade' ? `Crossfade ${seconds} s` : `Silencio ${seconds} s`;
+            }
+            function buildGap(i) {
+                const li = document.createElement('li'); li.className = 'gap'; li.dataset.gap = i;
+                const b = document.createElement('button'); b.type = 'button'; b.className = 'gapbtn';
+                b.innerHTML = ICON.play; b.append(' Probar transición · ' + gapLabel());
+                b.setAttribute('aria-label', `Probar la transición entre la canción ${i + 1} y la ${i + 2}: ${gapLabel()}`);
+                li.append(b); return li;
+            }
+
+            function renderList() {
+                list.textContent = '';
+                if (!state.tracks.length) {
+                    const li = document.createElement('li'); li.className = 'empty-li';
+                    li.textContent = 'Todavía no hay canciones. Arrastra archivos de audio o pulsa la zona de arriba para empezar.';
+                    list.append(li);
+                }
+                state.tracks.forEach((t, i) => {
+                    list.append(buildRow(t, i));
+                    if (i < state.tracks.length - 1) list.append(buildGap(i));
+                });
+                $$('.track', list).forEach((li, i) => drawThumb(li, state.tracks[i]));
+                updateNotice();
+            }
+
+            function updateRow(t) {
+                const i = state.tracks.indexOf(t), li = $(`.track[data-id="${t.id}"]`, list);
+                if (!li) return;
+                fillRowText(li, t, i);
+                drawThumb(li, t);
+            }
+
+            function updateNotice() {
+                const miss = state.tracks.filter(t => t.missing).length, box = $('#missingNotice');
+                box.hidden = !miss;
+                if (miss) box.textContent = `Faltan ${miss} ${miss === 1 ? 'archivo de audio' : 'archivos de audio'} de este proyecto. Arrastra aquí los originales: se emparejan por nombre de archivo.`;
+            }
+
+            function updateSummary() {
+                const L = getLayout();
+                $('#summary').textContent = state.tracks.length
+                    ? `${state.tracks.length} ${state.tracks.length === 1 ? 'canción' : 'canciones'} · ${fmt(L.total)}`
+                    : '';
+                const sr = audioCtx ? audioCtx.sampleRate : 44100;
+                $('#expSize').textContent = L.total ? `${(L.total * sr * 4 / 1048576).toFixed(0)} MB` : '—';
+            }
+
+            function renderTimeline() {
+                const box = $('#tl'), L = getLayout();
+                box.textContent = '';
+                state.tracks.forEach((t, i) => {
+                    const d = document.createElement('div');
+                    d.className = 'seg' + (t.id === state.selectedId ? ' sel' : '');
+                    d.style.left = (L.pos[i] / L.total * 100) + '%';
+                    d.style.width = Math.max(0.3, L.len[i] / L.total * 100) + '%';
+                    d.style.top = (i % 2 ? 50 : 2) + '%';
+                    d.style.setProperty('--h', (i * 53) % 360);
+                    d.title = `${i + 1}. ${t.name}`;
+                    box.append(d);
+                });
+                const ph = document.createElement('div'); ph.className = 'ph'; ph.id = 'ph'; box.append(ph);
+                updateTransport();
+            }
+
+            function renderAll() {
+                renderList(); refreshEditor(); renderTimeline(); updateSummary(); syncSeek(); syncTransUI();
+            }
+            function afterStructure() { markDirty(); renderAll(); scheduleRestart(); }
+
+            function select(id, scroll = false) {
+                state.selectedId = id;
+                $$('.track', list).forEach(li => {
+                    const s = li.dataset.id === id; li.classList.toggle('selected', s); $('.main', li).setAttribute('aria-pressed', s);
+                });
+                refreshEditor(); renderTimeline();
+                if (scroll && matchMedia('(max-width:900px)').matches)
+                    $('#editor').scrollIntoView({ block: 'nearest', behavior: reduceMotion ? 'auto' : 'smooth' });
+            }
+
+            function moveTrack(from, to, focus) {
+                if (to < 0 || to >= state.tracks.length || from === to) return;
+                const [t] = state.tracks.splice(from, 1); state.tracks.splice(to, 0, t);
+                afterStructure();
+                if (focus) $(`.track[data-id="${t.id}"] .main`, list)?.focus();
+                announce(`«${t.name}» ahora es la canción ${to + 1}`);
+            }
+            function duplicateTrack(i) {
+                const t = state.tracks[i], c = newTrack({ ...t, id: uid(), name: t.name + ' (copia)' });
+                state.tracks.splice(i + 1, 0, c); state.selectedId = c.id; afterStructure();
+            }
+            function removeTrack(i) {
+                const [t] = state.tracks.splice(i, 1);
+                if (state.selectedId === t.id) state.selectedId = state.tracks[Math.min(i, state.tracks.length - 1)]?.id || null;
+                afterStructure();
+                toast(`«${t.name}» eliminada.`, 'info', { label: 'Deshacer', fn: () => { state.tracks.splice(Math.min(i, state.tracks.length), 0, t); state.selectedId = t.id; afterStructure(); } });
+            }
+
+            /* Eventos de la lista (delegación) */
+            list.addEventListener('click', e => {
+                const gapBtn = e.target.closest('.gap .gapbtn');
+                if (gapBtn) { previewTransition(+gapBtn.closest('.gap').dataset.gap); return; }
+                const li = e.target.closest('.track'); if (!li) return;
+                const i = state.tracks.findIndex(t => t.id === li.dataset.id), t = state.tracks[i];
+                const act = e.target.closest('[data-act]')?.dataset.act;
+                if (act === 'play') { select(t.id); play(getLayout().pos[i]); }
+                else if (act === 'up') moveTrack(i, i - 1, true);
+                else if (act === 'down') moveTrack(i, i + 1, true);
+                else if (act === 'dup') duplicateTrack(i);
+                else if (act === 'del') removeTrack(i);
+                else if (e.target.closest('.main')) select(t.id, true);
+            });
+            list.addEventListener('keydown', e => {
+                const main = e.target.closest('.main'); if (!main) return;
+                const li = main.closest('.track'), i = state.tracks.findIndex(t => t.id === li.dataset.id);
+                if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
+                    e.preventDefault();
+                    const d = e.key === 'ArrowUp' ? -1 : 1;
+                    if (e.altKey) moveTrack(i, i + d, true);
+                    else $$('.main', list)[i + d]?.focus();
+                } else if (e.key === 'Delete') { e.preventDefault(); removeTrack(i); }
+            });
+
+            /* Reordenar arrastrando con puntero (ratón y táctil) */
+            let drag = null;
+            list.addEventListener('pointerdown', e => {
+                const grip = e.target.closest('.grip'); if (!grip) return;
+                e.preventDefault();
+                const li = grip.closest('.track');
+                drag = { li, target: null, after: false };
+                li.classList.add('dragging');
+                grip.setPointerCapture(e.pointerId);
+            });
+            list.addEventListener('pointermove', e => {
+                if (!drag) return;
+                const rows = $$('.track', list); let hit = null;
+                for (const r of rows) {
+                    const b = r.getBoundingClientRect();
+                    if (e.clientY < b.top + b.height / 2) { hit = { r, after: false }; break; }
+                }
+                if (!hit) hit = { r: rows[rows.length - 1], after: true };
+                rows.forEach(r => r.classList.remove('drop-before', 'drop-after'));
+                hit.r.classList.add(hit.after ? 'drop-after' : 'drop-before');
+                drag.target = hit;
+                if (e.clientY < 90) window.scrollBy(0, -14);
+                else if (e.clientY > innerHeight - 200) window.scrollBy(0, 14);
+            });
+            function endDrag(commit) {
+                if (!drag) return;
+                const { li, target } = drag; drag = null;
+                $$('.track', list).forEach(r => r.classList.remove('dragging', 'drop-before', 'drop-after'));
+                if (commit && target) {
+                    const rows = $$('.track', list);
+                    const from = rows.indexOf(li);
+                    let to = rows.indexOf(target.r) + (target.after ? 1 : 0);
+                    if (from < to) to--;
+                    moveTrack(from, to, true);
+                }
+            }
+            list.addEventListener('pointerup', () => endDrag(true));
+            list.addEventListener('pointercancel', () => endDrag(false));
+
+            /* ===================== 5. EDICIÓN DE CANCIÓN ===================== */
+            const ed = {
+                name: $('#edName'), start: $('#edStart'), end: $('#edEnd'), vol: $('#edVol'), fi: $('#edFi'), fo: $('#edFo'),
+                volOut: $('#edVolOut'), fiOut: $('#edFiOut'), foOut: $('#edFoOut'), len: $('#edLen'),
+                wave: $('#edWave'), box: $('#trimBox'), hS: $('#hStart'), hE: $('#hEnd'), shL: $('#shadeL'), shR: $('#shadeR'),
+            };
+            const setVal = (el, v) => { if (document.activeElement !== el) el.value = v; };
+
+            function refreshEditor() {
+                const t = sel();
+                $('#edEmpty').hidden = !!t; $('#edBody').hidden = !t;
+                if (!t) return;
+                setVal(ed.name, t.name);
+                setVal(ed.start, t.start.toFixed(2)); setVal(ed.end, t.end.toFixed(2));
+                ed.start.max = ed.end.max = t.duration || '';
+                ed.vol.value = Math.round(t.volume * 100); ed.volOut.textContent = `${Math.round(t.volume * 100)} %`;
+                ed.fi.value = t.fadeIn; ed.fiOut.textContent = fmt1(t.fadeIn);
+                ed.fo.value = t.fadeOut; ed.foOut.textContent = fmt1(t.fadeOut);
+                ed.len.textContent = t.duration ? `Duración resultante: ${fmt(trackLen(t))} (original ${fmt(t.duration)})` : 'Sin audio cargado.';
+                updateTrimUI(t);
+            }
+            function updateTrimUI(t) {
+                const d = t.duration || 1, a = t.start / d * 100, b = t.end / d * 100;
+                ed.hS.style.left = a + '%'; ed.hE.style.left = b + '%';
+                ed.shL.style.left = '0'; ed.shL.style.width = a + '%';
+                ed.shR.style.left = b + '%'; ed.shR.style.width = (100 - b) + '%';
+                ed.hS.setAttribute('aria-valuemin', 0); ed.hS.setAttribute('aria-valuemax', d.toFixed(2));
+                ed.hS.setAttribute('aria-valuenow', t.start.toFixed(2)); ed.hS.setAttribute('aria-valuetext', `Inicio en ${fmt(t.start)}`);
+                ed.hE.setAttribute('aria-valuemin', 0); ed.hE.setAttribute('aria-valuemax', d.toFixed(2));
+                ed.hE.setAttribute('aria-valuenow', t.end.toFixed(2)); ed.hE.setAttribute('aria-valuetext', `Final en ${fmt(t.end)}`);
+                drawWave(ed.wave, t.peaks, { from: t.start / d, to: t.end / d });
+            }
+            function afterEdit(t) {
+                markDirty(); updateRow(t); refreshEditor(); renderTimeline(); updateSummary(); syncSeek(); scheduleRestart();
+            }
+            function trimSet(t, { start, end }) {
+                if (!t.duration) return;
+                const MIN = Math.min(0.5, t.duration);
+                if (start !== undefined) t.start = Math.round(clamp(start, 0, t.end - MIN) * 100) / 100;
+                if (end !== undefined) t.end = Math.round(clamp(end, t.start + MIN, t.duration) * 100) / 100;
+                afterEdit(t);
+            }
+
+            ed.name.addEventListener('input', () => { const t = sel(); if (!t) return; t.name = ed.name.value; markDirty(); updateRow(t); renderTimeline(); });
+            ed.start.addEventListener('change', () => { const t = sel(); if (t) trimSet(t, { start: num(ed.start.value, t.start) }); });
+            ed.end.addEventListener('change', () => { const t = sel(); if (t) trimSet(t, { end: num(ed.end.value, t.end) }); });
+            ed.vol.addEventListener('input', () => { const t = sel(); if (!t) return; t.volume = ed.vol.value / 100; afterEdit(t); });
+            ed.fi.addEventListener('input', () => { const t = sel(); if (!t) return; t.fadeIn = +ed.fi.value; afterEdit(t); });
+            ed.fo.addEventListener('input', () => { const t = sel(); if (!t) return; t.fadeOut = +ed.fo.value; afterEdit(t); });
+            $('#edReset').addEventListener('click', () => {
+                const t = sel(); if (!t) return;
+                Object.assign(t, { start: 0, end: t.duration, volume: 1, fadeIn: 0, fadeOut: 0 }); afterEdit(t);
+            });
+            $('#edPlay').addEventListener('click', () => {
+                const t = sel(); if (!t) return;
+                play(getLayout().pos[state.tracks.indexOf(t)]);
+            });
+
+            function bindHandle(el, which) {
+                let down = false;
+                const move = e => {
+                    const t = sel(); if (!down || !t) return;
+                    const r = ed.box.getBoundingClientRect();
+                    const x = clamp((e.clientX - r.left) / r.width, 0, 1) * t.duration;
+                    trimSet(t, which === 'start' ? { start: x } : { end: x });
+                };
+                el.addEventListener('pointerdown', e => { e.preventDefault(); down = true; el.setPointerCapture(e.pointerId); el.focus(); });
+                el.addEventListener('pointermove', move);
+                el.addEventListener('pointerup', () => { down = false; });
+                el.addEventListener('pointercancel', () => { down = false; });
+                el.addEventListener('keydown', e => {
+                    const t = sel(); if (!t) return;
+                    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+                    e.preventDefault(); e.stopPropagation();
+                    const step = (e.shiftKey ? 1 : 0.1) * (e.key === 'ArrowLeft' ? -1 : 1);
+                    trimSet(t, which === 'start' ? { start: t.start + step } : { end: t.end + step });
+                });
+            }
+            bindHandle(ed.hS, 'start'); bindHandle(ed.hE, 'end');
+
+            /* Transiciones */
+            function syncTransUI() {
+                const { type, seconds } = state.trans;
+                $$('input[name=trans]').forEach(r => { r.checked = r.value === type; });
+                $('#transSec').value = seconds; $('#transSec').disabled = type === 'cut';
+                $('#transOut').textContent = type === 'cut' ? '—' : `${seconds} s`;
+                $('#transHint').textContent = type === 'cut' ? 'Las canciones se enlazan sin pausa ni mezcla.'
+                    : type === 'crossfade' ? `La siguiente canción entra mientras la anterior se desvanece (${seconds} s, como máximo la mitad de la canción más corta).`
+                        : `Se inserta un silencio de ${seconds} s entre canciones.`;
+            }
+            $$('input[name=trans]').forEach(r => r.addEventListener('change', () => {
+                state.trans.type = r.value; markDirty(); renderAll(); scheduleRestart();
+            }));
+            $('#transSec').addEventListener('input', e => {
+                state.trans.seconds = +e.target.value; markDirty();
+                syncTransUI(); renderList(); renderTimeline(); updateSummary(); syncSeek(); scheduleRestart();
+            });
+
+            /* ===================== 6. REPRODUCCIÓN ===================== */
+            const bPlay = $('#bPlay'), seek = $('#seek');
+            $('#bPrev').innerHTML = ICON.prev; $('#bNext').innerHTML = ICON.next; bPlay.innerHTML = ICON.play;
+
+            function currentPos() {
+                if (!P.playing || !audioCtx) return P.pausedAt;
+                return Math.max(P.startMix, P.startMix + (audioCtx.currentTime - P.startCtx));
+            }
+            function stopSources() {
+                P.sources.forEach(s => { try { s.stop(); } catch { } try { s.disconnect(); } catch { } });
+                P.sources = [];
+            }
+            async function play(from = P.pausedAt, until = null) {
+                if (!state.tracks.some(t => t.buffer)) { toast('Añade al menos una canción para reproducir.', 'info'); return; }
+                let ctx; try { ctx = getCtx(); } catch (e) { toast(e.message, 'error'); return; }
+                const tok = ++P.tok;
+                try { await ctx.resume(); } catch { }
+                if (tok !== P.tok) return;
+                stopSources();
+                const L = getLayout();
+                if (from >= L.total - 0.05) from = 0;
+                const t0 = ctx.currentTime + 0.06;
+                schedule(ctx, P.master, from, until ?? L.total, t0, P.sources);
+                Object.assign(P, { startCtx: t0, startMix: from, playing: true, until });
+                syncPlayBtn(); startLoop();
+            }
+            function pause() {
+                P.tok++;
+                P.pausedAt = currentPos();
+                stopSources(); P.playing = false; P.until = null;
+                syncPlayBtn(); updateTransport();
+            }
+            const togglePlay = () => (P.playing ? pause() : play(P.pausedAt));
+            function seekTo(t) {
+                const L = getLayout(); t = clamp(t, 0, L.total);
+                if (P.playing) play(t, P.until); else { P.pausedAt = t; updateTransport(); }
+            }
+            function syncPlayBtn() {
+                bPlay.innerHTML = P.playing ? ICON.pause : ICON.play;
+                bPlay.setAttribute('aria-label', P.playing ? 'Pausar' : 'Reproducir');
+            }
+            function activeIndex(pos) {
+                const L = getLayout();
+                for (let i = L.n - 1; i >= 0; i--) if (pos >= L.pos[i] - 1e-6 && pos < L.pos[i] + L.len[i]) return i;
+                return -1;
+            }
+            function nextTrack() {
+                const L = getLayout(), pos = currentPos();
+                const i = L.pos.findIndex(p => p > pos + 0.05);
+                if (i >= 0) seekTo(L.pos[i]); else seekTo(L.total);
+            }
+            function prevTrack() {
+                const L = getLayout(), pos = currentPos(), a = activeIndex(pos);
+                if (a < 0) { seekTo(0); return; }
+                if (pos - L.pos[a] > 2 || a === 0) seekTo(L.pos[a]); else seekTo(L.pos[a - 1]);
+            }
+            function previewTransition(i) {
+                const L = getLayout(); if (i < 0 || i >= L.n - 1) return;
+                const endA = L.pos[i] + L.len[i], startB = L.pos[i + 1];
+                const from = Math.max(0, Math.min(startB, endA) - 4);
+                const until = Math.min(L.total, Math.max(startB, endA) + 3);
+                P.previewFrom = from; play(from, until);
+            }
+            let restartTimer = 0;
+            function scheduleRestart() {
+                if (!P.playing) return;
+                clearTimeout(restartTimer);
+                restartTimer = setTimeout(() => { if (P.playing) play(currentPos(), P.until); }, 180);
+            }
+
+            function syncSeek() {
+                const L = getLayout();
+                seek.max = L.total || 0; seek.disabled = !L.total;
+                if (!P.playing) P.pausedAt = clamp(P.pausedAt, 0, L.total);
+                updateTransport();
+            }
+            let scrubbing = false, lastActive = null, lastSecond = -1;
+            function updateTransport() {
+                const L = getLayout(); let pos = currentPos();
+                if (P.playing) {
+                    const endAt = P.until ?? L.total;
+                    if (pos >= endAt - 0.02) {
+                        const back = P.until != null ? P.previewFrom : 0;
+                        pause(); P.pausedAt = back; pos = back;
+                    }
+                }
+                $('#tTime').textContent = `${fmt(pos)} / ${fmt(L.total)}`;
+                if (!scrubbing) seek.value = pos;
+                const sec = Math.floor(pos);
+                if (sec !== lastSecond) { lastSecond = sec; seek.setAttribute('aria-valuetext', `${fmt(pos)} de ${fmt(L.total)}`); }
+                const ph = $('#ph'); if (ph && L.total) ph.style.left = (pos / L.total * 100) + '%';
+                const a = activeIndex(pos), id = a >= 0 ? state.tracks[a].id : null;
+                if (id !== lastActive || !P.playing && lastActive) {
+                    lastActive = id;
+                    $$('.track', list).forEach(li => li.classList.toggle('playing', P.playing && li.dataset.id === id));
+                    $('#nowName').textContent = a >= 0 ? `${a + 1}. ${state.tracks[a].name}` : '';
+                }
+                if (!P.playing && lastActive) { $$('.track.playing', list).forEach(li => li.classList.remove('playing')); }
+            }
+            seek.addEventListener('pointerdown', () => { scrubbing = true; });
+            seek.addEventListener('pointerup', () => { scrubbing = false; });
+            seek.addEventListener('input', () => { $('#tTime').textContent = `${fmt(+seek.value)} / ${fmt(getLayout().total)}`; });
+            seek.addEventListener('change', () => { scrubbing = false; seekTo(+seek.value); });
+            $('#tl').addEventListener('click', e => {
+                const L = getLayout(); if (!L.total) return;
+                const r = e.currentTarget.getBoundingClientRect();
+                seekTo((e.clientX - r.left) / r.width * L.total);
+            });
+            bPlay.addEventListener('click', togglePlay);
+            $('#bNext').addEventListener('click', nextTrack);
+            $('#bPrev').addEventListener('click', prevTrack);
+
+            /* Visualizador animado */
+            const viz = { cv: $('#viz'), h: new Float32Array(56), data: null, energy: 0 };
+            function drawViz() {
+                if (reduceMotion) return;
+                const cv = viz.cv, dpr = Math.min(devicePixelRatio || 1, 2), w = cv.clientWidth, hgt = cv.clientHeight;
+                if (!w || !hgt) return;
+                if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(hgt * dpr)) { cv.width = Math.round(w * dpr); cv.height = Math.round(hgt * dpr); }
+                const c = cv.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0); c.clearRect(0, 0, w, hgt);
+                const N = viz.h.length;
+                let bins = 0;
+                if (P.analyser && P.playing) {
+                    bins = P.analyser.frequencyBinCount;
+                    if (!viz.data || viz.data.length !== bins) viz.data = new Uint8Array(bins);
+                    P.analyser.getByteFrequencyData(viz.data);
+                }
+                const g = c.createLinearGradient(0, 0, w, 0); g.addColorStop(0, '#8b5cf6'); g.addColorStop(1, '#22d3ee');
+                c.fillStyle = g;
+                const bw = w / N; let energy = 0;
+                for (let i = 0; i < N; i++) {
+                    let target = 0;
+                    if (bins) {
+                        const lo = Math.floor(Math.pow(i / N, 1.6) * bins * 0.85), hi = Math.max(lo + 1, Math.floor(Math.pow((i + 1) / N, 1.6) * bins * 0.85));
+                        let m = 0; for (let k = lo; k < hi; k++) if (viz.data[k] > m) m = viz.data[k];
+                        target = m / 255;
+                    }
+                    viz.h[i] += (target - viz.h[i]) * (target > viz.h[i] ? 0.5 : 0.1);
+                    energy += viz.h[i];
+                    const bh = viz.h[i] * hgt * 0.95;
+                    c.fillRect(i * bw + 1, hgt - bh, Math.max(1, bw - 2), bh);
+                }
+                viz.energy = energy;
+            }
+            let raf = 0;
+            function frame() {
+                raf = 0; updateTransport(); drawViz();
+                if (P.playing || viz.energy > 0.05) raf = requestAnimationFrame(frame);
+            }
+            function startLoop() { if (!raf) raf = requestAnimationFrame(frame); }
+
+            /* ===================== 7. EXPORTACIÓN ===================== */
+            let exporting = false, cancelExport = false, lastUrl = null;
+
+            function int16FromBuffer(buf, stats) {
+                const n = buf.length, l = buf.getChannelData(0), r = buf.numberOfChannels > 1 ? buf.getChannelData(1) : l;
+                const out = new Int16Array(n * 2);
+                for (let i = 0; i < n; i++) {
+                    let a = l[i], b = r[i];
+                    if (a > 1 || a < -1 || b > 1 || b < -1) stats.clipped++;
+                    a = a > 1 ? 1 : a < -1 ? -1 : a; b = b > 1 ? 1 : b < -1 ? -1 : b;
+                    out[2 * i] = a < 0 ? a * 0x8000 : a * 0x7fff;
+                    out[2 * i + 1] = b < 0 ? b * 0x8000 : b * 0x7fff;
+                }
+                return out.buffer;
+            }
+            function wavHeader(samples, sr) {
+                const h = new ArrayBuffer(44), v = new DataView(h), dataBytes = samples * 4;
+                const s = (o, t) => { for (let i = 0; i < t.length; i++) v.setUint8(o + i, t.charCodeAt(i)); };
+                s(0, 'RIFF'); v.setUint32(4, 36 + dataBytes, true); s(8, 'WAVE'); s(12, 'fmt ');
+                v.setUint32(16, 16, true); v.setUint16(20, 1, true); v.setUint16(22, 2, true);
+                v.setUint32(24, sr, true); v.setUint32(28, sr * 4, true); v.setUint16(32, 4, true); v.setUint16(34, 16, true);
+                s(36, 'data'); v.setUint32(40, dataBytes, true);
+                return h;
+            }
+            function setExportUI(on) {
+                exporting = on;
+                $('#btnExport').disabled = on; $('#btnCancel').hidden = !on; $('#expProg').hidden = !on;
+            }
+            async function exportWav() {
+                if (exporting) return;
+                if (!state.tracks.some(t => t.buffer)) { toast('Añade al menos una canción antes de exportar.', 'info'); return; }
+                if (state.tracks.some(t => t.missing || t.loading)) { toast('Hay canciones sin audio o aún cargando. Complétalas antes de exportar.', 'error'); return; }
+                const L = getLayout(), sr = getCtx().sampleRate, total = Math.ceil(L.total * sr);
+                if (total * 4 + 44 > 4e9) { toast('El mix supera el límite de 4 GB del formato WAV. Acórtalo o divídelo en dos.', 'error'); return; }
+                if (P.playing) pause();
+                setExportUI(true); cancelExport = false;
+                const prog = $('#prog'), txt = $('#progTxt'), stats = { clipped: 0 };
+                const parts = [null], CH = sr * 20, t0 = performance.now();
+                try {
+                    for (let off = 0; off < total; off += CH) {
+                        if (cancelExport) throw new Error('cancel');
+                        const n = Math.min(CH, total - off);
+                        const oc = new OfflineAudioContext(2, n, sr);
+                        const g = oc.createGain(); g.connect(oc.destination);
+                        schedule(oc, g, off / sr, (off + n) / sr, 0, null, 0.0002);
+                        const out = await oc.startRendering();
+                        parts.push(int16FromBuffer(out, stats));
+                        const frac = (off + n) / total, el = (performance.now() - t0) / 1000;
+                        prog.value = frac * 100;
+                        txt.textContent = `Procesando… ${Math.round(frac * 100)} %` + (frac > 0.05 ? ` · quedan ~${fmt(el / frac * (1 - frac))}` : '');
+                        await tick();
+                    }
+                    parts[0] = wavHeader(total, sr);
+                    const blob = new Blob(parts, { type: 'audio/wav' });
+                    const name = `${safeName(state.name)}.wav`;
+                    if (lastUrl) URL.revokeObjectURL(lastUrl);
+                    lastUrl = URL.createObjectURL(blob);
+                    const dl = $('#dl'); dl.href = lastUrl; dl.download = name; dl.hidden = false;
+                    dl.textContent = `Descargar de nuevo «${name}» (${(blob.size / 1048576).toFixed(1)} MB)`;
+                    dl.click();
+                    toast('Mix exportado correctamente.', 'ok'); announce('Exportación completada');
+                    if (stats.clipped) toast('Se detectó saturación (clipping) en parte del mix. Baja el volumen de alguna canción.', 'warn');
+                } catch (err) {
+                    if (err && err.message === 'cancel') toast('Exportación cancelada.', 'info');
+                    else toast('Error al exportar: ' + (err && err.message || err) + '. Prueba con menos canciones o cierra otras pestañas.', 'error');
+                } finally { setExportUI(false); }
+            }
+            $('#btnExport').addEventListener('click', exportWav);
+            $('#btnCancel').addEventListener('click', () => { cancelExport = true; });
+
+            /* ===================== 8. PROYECTOS (IndexedDB / JSON) ===================== */
+            function serialize() {
+                return {
+                    app: 'mix-maker', version: 1, name: state.name, transition: { ...state.trans },
+                    tracks: state.tracks.map(t => ({
+                        id: t.id, name: t.name, fileName: t.fileName, fileSize: t.fileSize, duration: t.duration,
+                        start: t.start, end: t.end, volume: t.volume, fadeIn: t.fadeIn, fadeOut: t.fadeOut,
+                    })),
+                };
+            }
+
+            /* Reconstruye el proyecto a partir de datos (JSON o IndexedDB). fileMap: id → File/Blob */
+            function applyData(data, fileMap) {
+                if (P.playing) pause();
+                P.pausedAt = 0;
+                state.name = String(data.name || 'Mi mix').slice(0, 60);
+                const tr = data.transition || {};
+                state.trans = {
+                    type: ['cut', 'crossfade', 'silence'].includes(tr.type) ? tr.type : 'crossfade',
+                    seconds: clamp(num(tr.seconds, 4), 1, 12),
+                };
+                const queue = [];
+                state.tracks = data.tracks.map(d => {
+                    const duration = Math.max(0, num(d.duration));
+                    const t = newTrack({
+                        id: fileMap ? String(d.id || uid()) : uid(),
+                        name: String(d.name || '').slice(0, 120), fileName: String(d.fileName || d.name || ''),
+                        fileSize: num(d.fileSize), duration,
+                        start: clamp(num(d.start), 0, duration), end: clamp(num(d.end, duration), 0, duration) || duration,
+                        volume: clamp(num(d.volume, 1), 0, 2), fadeIn: clamp(num(d.fadeIn), 0, 15), fadeOut: clamp(num(d.fadeOut), 0, 15),
+                        missing: true,
+                    });
+                    const f = fileMap && fileMap.get(d.id);
+                    if (f) { t.file = f; t.loading = true; t.missing = false; queue.push(t); }
+                    return t;
+                });
+                state.selectedId = state.tracks[0]?.id || null;
+                $('#projName').value = state.name;
+                renderAll();
+                return queue;
+            }
+
+            /* ---- JSON ---- */
+            $('#btnExportJson').addEventListener('click', () => {
+                const blob = new Blob([JSON.stringify(serialize(), null, 2)], { type: 'application/json' });
+                downloadBlob(blob, `${safeName(state.name)}.mixmaker.json`);
+                toast('Proyecto exportado. Contiene los ajustes, no el audio: conserva tus archivos originales.', 'info');
+            });
+            $('#btnImportJson').addEventListener('click', () => $('#jsonInput').click());
+            $('#jsonInput').addEventListener('change', async e => {
+                const f = e.target.files[0]; e.target.value = '';
+                if (!f) return;
+                let data;
+                try { data = JSON.parse(await f.text()); } catch { toast('El archivo no es un JSON válido.', 'error'); return; }
+                if (!data || data.app !== 'mix-maker' || !Array.isArray(data.tracks)) { toast('Este JSON no es un proyecto de Mix Maker.', 'error'); return; }
+                if (state.tracks.length && dirty && !confirm('Se reemplazará el mix actual (hay cambios sin guardar). ¿Continuar?')) return;
+                state.projectId = null; applyData(data, null); dirty = false;
+                toast('Proyecto importado. Arrastra los archivos de audio originales para completarlo.', 'info');
+            });
+
+            /* ---- IndexedDB ---- */
+            let dbp = null;
+            function openDB() {
+                if (dbp) return dbp;
+                dbp = new Promise((res, rej) => {
+                    if (!window.indexedDB) return rej(new Error('IndexedDB no está disponible en este navegador (¿modo privado?).'));
+                    const r = indexedDB.open('mix-maker', 1);
+                    r.onupgradeneeded = () => {
+                        const db = r.result;
+                        db.createObjectStore('projects', { keyPath: 'id' });
+                        db.createObjectStore('files', { keyPath: 'key' }).createIndex('pid', 'pid');
+                    };
+                    r.onsuccess = () => res(r.result);
+                    r.onerror = () => rej(r.error);
+                }).catch(err => { dbp = null; throw err; });
+                return dbp;
+            }
+            const idb = (db, store, mode, fn) => new Promise((res, rej) => {
+                const tx = db.transaction(store, mode); const rq = fn(tx.objectStore(store));
+                tx.oncomplete = () => res(rq && rq.result); tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error);
+            });
+
+            async function saveProject() {
+                try {
+                    const db = await openDB();
+                    if (!state.projectId) state.projectId = uid();
+                    const pid = state.projectId, L = getLayout();
+                    const meta = { id: pid, name: state.name, updated: Date.now(), count: state.tracks.length, duration: L.total, data: serialize() };
+                    await new Promise((res, rej) => {
+                        const tx = db.transaction(['projects', 'files'], 'readwrite'), fs = tx.objectStore('files');
+                        tx.oncomplete = res; tx.onerror = () => rej(tx.error); tx.onabort = () => rej(tx.error || new Error('Operación cancelada'));
+                        tx.objectStore('projects').put(meta);
+                        const rq = fs.index('pid').getAllKeys(pid);
+                        rq.onsuccess = () => {
+                            rq.result.forEach(k => fs.delete(k));
+                            state.tracks.forEach(t => { if (t.file) fs.put({ key: pid + '/' + t.id, pid, tid: t.id, blob: t.file }); });
+                        };
+                    });
+                    dirty = false;
+                    toast(`«${state.name}» guardado en este navegador.`, 'ok');
+                } catch (err) {
+                    const quota = err && err.name === 'QuotaExceededError';
+                    toast('No se pudo guardar: ' + (quota ? 'no hay espacio suficiente en el navegador.' : (err && err.message || err)), 'error');
+                }
+            }
+            async function loadProject(id) {
+                if (dirty && state.tracks.length && !confirm('Hay cambios sin guardar en el mix actual. ¿Abrir otro proyecto de todos modos?')) return;
+                try {
+                    const db = await openDB();
+                    const meta = await idb(db, 'projects', 'readonly', s => s.get(id));
+                    if (!meta) { toast('No se encontró el proyecto.', 'error'); return; }
+                    const files = await idb(db, 'files', 'readonly', s => s.index('pid').getAll(id));
+                    const map = new Map(files.map(f => [f.tid, f.blob]));
+                    state.projectId = id;
+                    const queue = applyData(meta.data, map);
+                    dirty = false;
+                    $('#dlgProjects').close();
+                    await decodeQueue(queue, true);
+                    toast(`Proyecto «${meta.name}» abierto.`, 'ok');
+                } catch (err) { toast('No se pudo abrir el proyecto: ' + (err && err.message || err), 'error'); }
+            }
+            async function deleteProject(id) {
+                const db = await openDB();
+                await new Promise((res, rej) => {
+                    const tx = db.transaction(['projects', 'files'], 'readwrite'), fs = tx.objectStore('files');
+                    tx.oncomplete = res; tx.onerror = () => rej(tx.error);
+                    tx.objectStore('projects').delete(id);
+                    const rq = fs.index('pid').getAllKeys(id); rq.onsuccess = () => rq.result.forEach(k => fs.delete(k));
+                });
+                if (state.projectId === id) state.projectId = null;
+            }
+            async function renderProjects() {
+                const ul = $('#projList'); ul.textContent = '';
+                try {
+                    const db = await openDB();
+                    const all = (await idb(db, 'projects', 'readonly', s => s.getAll())).sort((a, b) => b.updated - a.updated);
+                    if (!all.length) { const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'Aún no has guardado ningún proyecto.'; ul.append(li); return; }
+                    for (const p of all) {
+                        const li = document.createElement('li'); li.className = 'proj';
+                        const info = document.createElement('div');
+                        const b = document.createElement('b'); b.textContent = p.name;
+                        const sm = document.createElement('small');
+                        sm.textContent = `${p.count} canciones · ${fmt(p.duration)} · ${new Date(p.updated).toLocaleString('es')}`;
+                        info.append(b, sm);
+                        const acts = document.createElement('div'); acts.style.cssText = 'display:flex;gap:6px';
+                        const open = document.createElement('button'); open.type = 'button'; open.textContent = 'Abrir'; open.className = 'primary';
+                        open.setAttribute('aria-label', `Abrir «${p.name}»`); open.addEventListener('click', () => loadProject(p.id));
+                        const del = document.createElement('button'); del.type = 'button'; del.textContent = 'Eliminar'; del.className = 'danger';
+                        del.setAttribute('aria-label', `Eliminar «${p.name}»`);
+                        del.addEventListener('click', async () => {
+                            if (!confirm(`¿Eliminar «${p.name}» de este navegador? No se puede deshacer.`)) return;
+                            await deleteProject(p.id); renderProjects();
+                        });
+                        acts.append(open, del); li.append(info, acts); ul.append(li);
+                    }
+                } catch (err) {
+                    const li = document.createElement('li'); li.className = 'empty'; li.textContent = 'No se pudo acceder al almacenamiento: ' + (err && err.message || err); ul.append(li);
+                }
+            }
+            $('#btnSave').addEventListener('click', saveProject);
+            $('#btnProjects').addEventListener('click', () => { renderProjects(); $('#dlgProjects').showModal(); });
+            $('#btnCloseDlg').addEventListener('click', () => $('#dlgProjects').close());
+            $('#btnNew').addEventListener('click', () => {
+                if (dirty && state.tracks.length && !confirm('Hay cambios sin guardar. ¿Empezar un proyecto nuevo de todos modos?')) return;
+                if (P.playing) pause();
+                P.pausedAt = 0; state.projectId = null; state.tracks = []; state.selectedId = null; state.name = 'Mi mix';
+                state.trans = { type: 'crossfade', seconds: 4 }; $('#projName').value = state.name; dirty = false;
+                renderAll(); $('#dlgProjects').close();
+            });
+            $('#projName').addEventListener('input', e => { state.name = e.target.value.slice(0, 60) || 'Mi mix'; markDirty(); });
+            window.addEventListener('beforeunload', e => { if (dirty && state.tracks.length) { e.preventDefault(); e.returnValue = ''; } });
+
+            /* ===================== 9. ARRANQUE Y ENTRADA ===================== */
+            const drop = $('#drop'), fileInput = $('#fileInput'), overlay = $('#dropOverlay');
+            drop.addEventListener('click', () => fileInput.click());
+            drop.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } });
+            fileInput.addEventListener('change', () => { addFiles(fileInput.files); fileInput.value = ''; });
+
+            const hasFiles = e => [...(e.dataTransfer?.types || [])].includes('Files');
+            let depth = 0;
+            window.addEventListener('dragenter', e => { if (!hasFiles(e)) return; e.preventDefault(); depth++; overlay.classList.add('on'); });
+            window.addEventListener('dragover', e => { if (!hasFiles(e)) return; e.preventDefault(); e.dataTransfer.dropEffect = 'copy'; });
+            window.addEventListener('dragleave', e => { if (!hasFiles(e)) return; depth = Math.max(0, depth - 1); if (!depth) overlay.classList.remove('on'); });
+            window.addEventListener('drop', e => {
+                if (!hasFiles(e)) return; e.preventDefault(); depth = 0; overlay.classList.remove('on'); addFiles(e.dataTransfer.files);
+            });
+
+            /* Atajos de teclado globales */
+            document.addEventListener('keydown', e => {
+                if ($('#dlgProjects').open || e.ctrlKey || e.metaKey || e.altKey) return;
+                const tg = e.target;
+                const interactive = tg.closest('button,a,summary,select,textarea,input:not([type=range]),[role=button]');
+                if (interactive) return;
+                const onSlider = tg.matches('input[type=range],[role=slider]');
+                if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+                else if ((e.key === 'ArrowLeft' || e.key === 'ArrowRight') && !onSlider) {
+                    e.preventDefault(); seekTo(currentPos() + (e.key === 'ArrowLeft' ? -1 : 1) * (e.shiftKey ? 15 : 5));
+                } else if (e.key.toLowerCase() === 'n') nextTrack();
+                else if (e.key.toLowerCase() === 'p') prevTrack();
+            });
+
+            window.addEventListener('resize', () => { $$('.track', list).forEach((li, i) => drawThumb(li, state.tracks[i])); const t = sel(); if (t) updateTrimUI(t); });
+
+            renderAll();
+            syncPlayBtn();
+        })();
+    </script>
+</body>
+
+</html>
